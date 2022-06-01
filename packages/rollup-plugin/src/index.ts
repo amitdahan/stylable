@@ -148,14 +148,25 @@ export function stylableRollupPlugin({
             }
         },
         load(id) {
-            if (id.endsWith(ST_CSS)) {
-                const code = fs.readFileSync(id, 'utf8');
+            if (id.endsWith(ST_CSS + '.js')) {
+                const code = fs.readFileSync(id.slice(0, -3), 'utf8');
                 return { code, moduleSideEffects: false };
             }
             return null;
         },
+        async resolveId(id, importer, options) {
+          if (id.endsWith(ST_CSS)) {
+            const resolution = await this.resolve(id, importer, { skipSelf: true, ...options });
+
+            if (!resolution) {
+                return resolution;
+            }
+            return { id: resolution.id + '.js' };
+          }
+          return null;
+        },
         transform(source, id) {
-            if (!id.endsWith(ST_CSS)) {
+            if (!id.endsWith(ST_CSS + '.js')) {
                 return null;
             }
             const { meta, exports } = stylable.transform(source, id);
